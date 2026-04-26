@@ -1,0 +1,5 @@
+::sysinit:/etc/init.d/rcS
+::respawn:/bin/getty 115200 ttyS0
+tty1::respawn:/bin/getty 38400 tty1
+::ctrlaltdel:/bin/reboot
+::shutdown:/etc/init.d/rcK

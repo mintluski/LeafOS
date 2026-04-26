@@ -1,0 +1,135 @@
+#!/bin/sh
+# ============================================================
+# LeafOS v1.0-LTS Init Script
+# Supports: initramfs boot, disk boot, installed system
+# ============================================================
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# ------ Mount virtual filesystems ------
+mount -t proc proc /proc 2>/dev/null
+mount -t sysfs sysfs /sys 2>/dev/null
+mount -t devtmpfs devtmpfs /dev 2>/dev/null
+mkdir -p /dev/pts /dev/shm /run /tmp
+mount -t devpts devpts /dev/pts 2>/dev/null
+mount -t tmpfs tmpfs /dev/shm 2>/dev/null
+mount -t tmpfs tmpfs /run 2>/dev/null
+mount -t tmpfs tmpfs /tmp 2>/dev/null
+
+# ------ Reduce kernel log verbosity ------
+echo 3 > /proc/sys/kernel/printk
+
+# ------ Hostname ------
+if [ -f /etc/hostname ]; then
+    HOSTNAME=$(cat /etc/hostname)
+else
+    HOSTNAME="leafos"
+fi
+echo "$HOSTNAME" > /proc/sys/kernel/hostname
+
+# ------ Check if installed on disk ------
+INSTALLED=0
+if [ -f /etc/leafos-installed ]; then
+    INSTALLED=1
+fi
+
+# ------ Check kernel command line for root= parameter ------
+ROOT_DEV=""
+for param in $(cat /proc/cmdline); do
+    case "$param" in
+        root=*)
+            ROOT_DEV="${param#root=}"
+            ;;
+    esac
+done
+
+# ------ If booting from initramfs with root= parameter, switch_root ------
+if [ -n "$ROOT_DEV" ] && [ "$ROOT_DEV" != "none" ] && [ ! -f /etc/leafos-installed ]; then
+    # Wait for disk device to appear
+    WAIT=0
+    while [ ! -b "$ROOT_DEV" ] && [ $WAIT -lt 10 ]; do
+        sleep 1
+        WAIT=$((WAIT + 1))
+    done
+
+    if [ -b "$ROOT_DEV" ]; then
+        mkdir -p /mnt/root
+        mount -o rw "$ROOT_DEV" /mnt/root 2>/dev/null
+        if [ -f /mnt/root/etc/leafos-installed ]; then
+            # Clean up before switch_root
+            umount /dev/pts 2>/dev/null
+            umount /dev/shm 2>/dev/null
+            umount /run 2>/dev/null
+            umount /tmp 2>/dev/null
+            exec switch_root /mnt/root /init
+        else
+            umount /mnt/root 2>/dev/null
+        fi
+    fi
+fi
+
+# ------ Remount root rw if on disk ------
+if [ "$INSTALLED" -eq 1 ]; then
+    mount -o remount,rw / 2>/dev/null
+    # Mount fstab entries
+    [ -f /etc/fstab ] && mount -a 2>/dev/null
+fi
+
+# ------ Network configuration ------
+# Loopback
+ifconfig lo 127.0.0.1 netmask 255.0.0.0 up 2>/dev/null
+
+# Activate eth0
+for i in 1 2 3 4 5; do
+    ip link set eth0 up 2>/dev/null && break
+    ifconfig eth0 up 2>/dev/null && break
+    sleep 1
+done
+
+# Obtain IP via DHCP (BusyBox udhcpc)
+if command -v udhcpc >/dev/null 2>&1; then
+    udhcpc -i eth0 -n -q -s /etc/udhcpc.script 2>/dev/null &
+fi
+
+# Wait for DHCP
+sleep 2
+
+# ------ Fix DNS for QEMU user-mode networking ------
+# QEMU user-mode provides DNS at 10.0.2.3
+if [ -f /proc/net/route ]; then
+    GW=$(ip route 2>/dev/null | grep default | awk '{print $3}')
+    if [ "$GW" = "10.0.2.2" ]; then
+        # QEMU user-mode networking detected
+        echo "nameserver 10.0.2.3" > /etc/resolv.conf
+    fi
+fi
+
+# ------ Initialize APK ------
+if [ -x /sbin/apk ]; then
+    mkdir -p /etc/apk /var/cache/apk /lib/apk/db /var/lib/apk
+fi
+
+# ------ Source profile ------
+[ -f /etc/profile ] && . /etc/profile
+
+# ------ System information ------
+IP_ADDR=$(ifconfig eth0 2>/dev/null | grep 'inet addr' | awk -F: '{print $2}' | awk '{print $1}')
+[ -z "$IP_ADDR" ] && IP_ADDR=$(ip addr show eth0 2>/dev/null | grep 'inet ' | awk '{print $2}')
+
+clear 2>/dev/null
+cat /etc/motd 2>/dev/null
+
+echo "  Kernel:  $(uname -r 2>/dev/null || echo 'N/A')"
+echo "  Shell:   BusyBox $(busybox 2>&1 | head -1 | awk '{print $2}')"
+echo "  Package: $(apk --version 2>/dev/null || echo 'N/A')"
+echo "  Network: ${IP_ADDR:-configuring...}"
+if [ "$INSTALLED" -eq 1 ]; then
+    echo "  Mode:    Installed (disk)"
+else
+    echo "  Mode:    Live (initramfs)"
+fi
+echo ""
+
+# ------ Interactive shell ------
+export ENV=/etc/profile
+exec /bin/sh -l

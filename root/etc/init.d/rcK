@@ -1,0 +1,6 @@
+#!/bin/sh
+# LeafOS shutdown
+for script in $(ls -r /etc/init.d/S* 2>/dev/null); do
+    [ -x "$script" ] && "$script" stop
+done
+sync

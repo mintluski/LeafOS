@@ -1,0 +1,7 @@
+NAME="LeafOS"
+VERSION="v1.0-LTS"
+ID=leafos
+VERSION_ID=1.0
+PRETTY_NAME="LeafOS v1.0-LTS"
+HOME_URL="https://leafos.dev"
+BUG_REPORT_URL="https://leafos.dev/issues"

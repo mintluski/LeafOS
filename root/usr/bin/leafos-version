@@ -1,0 +1,2 @@
+#!/bin/sh
+cat /etc/leafos-release 2>/dev/null || echo "LeafOS (unknown version)"

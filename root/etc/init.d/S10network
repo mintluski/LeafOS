@@ -1,0 +1,23 @@
+#!/bin/sh
+case "$1" in
+    start)
+        # Loopback
+        ifconfig lo 127.0.0.1 netmask 255.0.0.0 up 2>/dev/null
+
+        # Activate eth0
+        for i in 1 2 3 4 5; do
+            ip link set eth0 up 2>/dev/null && break
+            ifconfig eth0 up 2>/dev/null && break
+            sleep 1
+        done
+
+        # DHCP
+        if command -v udhcpc >/dev/null 2>&1; then
+            udhcpc -i eth0 -n -q -s /etc/udhcpc.script 2>/dev/null &
+        fi
+        sleep 2
+        ;;
+    stop)
+        ifconfig eth0 down 2>/dev/null
+        ;;
+esac

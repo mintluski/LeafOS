@@ -1,0 +1,30 @@
+#!/bin/sh
+echo ""
+echo "  LeafOS System Information"
+echo "  ========================="
+echo ""
+echo "  Version:   $(cat /etc/leafos-release 2>/dev/null || echo 'unknown')"
+echo "  Kernel:    $(uname -r 2>/dev/null)"
+echo "  Arch:      $(uname -m 2>/dev/null)"
+echo "  Shell:     BusyBox $(busybox 2>&1 | head -1 | awk '{print $2}')"
+echo "  Package:   $(apk --version 2>/dev/null || echo 'N/A')"
+echo "  Uptime:    $(uptime 2>/dev/null | awk '{print $3, $4}' | sed 's/,$//')"
+echo "  Memory:    $(free 2>/dev/null | grep Mem | awk '{printf "%.1f MB / %.1f MB", $3/1024, $2/1024}')"
+echo ""
+
+# Network
+IP=$(ifconfig eth0 2>/dev/null | grep 'inet addr' | awk -F: '{print $2}' | awk '{print $1}')
+[ -z "$IP" ] && IP=$(ip addr show eth0 2>/dev/null | grep 'inet ' | awk '{print $2}')
+echo "  Network:   ${IP:-not configured}"
+echo "  DNS:       $(cat /etc/resolv.conf 2>/dev/null | grep nameserver | head -1 | awk '{print $2}')"
+echo ""
+
+# Disk
+if [ -f /etc/leafos-installed ]; then
+    echo "  Mode:      Installed (disk)"
+    ROOT_DEV=$(mount | grep ' / ' | awk '{print $1}')
+    echo "  Root:      ${ROOT_DEV:-unknown}"
+else
+    echo "  Mode:      Live (initramfs)"
+fi
+echo ""

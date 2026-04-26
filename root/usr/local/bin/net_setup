@@ -1,0 +1,4 @@
+#!/bin/sh
+# Configura rede via DHCP
+echo "Configurando eth0 via DHCP..."
+udhcpc -i eth0 -n -q -s /etc/udhcpc.script

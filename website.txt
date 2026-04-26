@@ -1,0 +1,1 @@
+"WARNING: the docs folder is for the website the documentation is located in root/usr/share/doc/leafos/"

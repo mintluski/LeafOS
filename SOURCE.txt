@@ -1,0 +1,20 @@
+LeafOS V1 - Source Code
+
+Components:
+
+Linux kernel v6.19.6 (official kernel.org, with gokrazy logo patch):
+https://www.kernel.org/
+
+gokrazy logo patch (non-functional change, aesthetic only):
+available upon request via email
+
+BusyBox v1.31.1:
+https://busybox.net/downloads/busybox-1.31.1.tar.bz2
+
+musl libc v1.2.5:
+https://musl.libc.org/releases/musl-1.2.5.tar.gz
+
+GRUB (via grub-mkrescue from Debian/Ubuntu):
+https://packages.debian.org/grub-common
+
+If any specific source code is not available at the links above, please send an email to [antoniolonunes3@gmail.com]. Offer valid for 3 years.

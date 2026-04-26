@@ -115,3 +115,12 @@ If the system fails to boot:
    mount -o bind /dev /mnt/dev
    chroot /mnt /bin/sh
 ```
+## License
+
+LeafOS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2 only.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+Complete source code for all GPL components is available in the file `SOURCE.txt` included in this distribution or upon request to antoniolonunes3@gamil.com.
